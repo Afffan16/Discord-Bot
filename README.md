@@ -148,8 +148,82 @@ nano discord-bot.js
 
 ### 10. Start the Discord Bot
 
+#### Option A: Direct Execution (Simple)
+
 ```bash
 node discord-bot.js
+```
+
+**Important**: The script will run continuously and listen for Discord commands. Keep this terminal window open. To stop the bot, press `Ctrl + C`.
+
+The bot will automatically:
+- Connect to Discord
+- Listen for commands (!help, !truth, !dare)
+- Keep running until manually stopped
+- Attempt to reconnect if connection drops
+
+#### Option B: Run in Background with Screen (Recommended)
+
+To run the bot in a detachable terminal session:
+
+```bash
+# Install screen if not already installed
+sudo apt install screen
+
+# Start the bot in a new screen session
+screen -S discord-bot -d -m node discord-bot.js
+
+# List active screen sessions
+screen -ls
+
+# Reattach to the session to view logs
+screen -r discord-bot
+
+# Detach from session (without stopping it): Press Ctrl + A, then D
+```
+
+#### Option C: Use PM2 for Process Management (Production)
+
+For enterprise-level process management:
+
+```bash
+# Install PM2 globally
+sudo npm install -g pm2
+
+# Start the bot with PM2
+pm2 start discord-bot.js --name discord-bot
+
+# View running processes
+pm2 list
+
+# View logs in real-time
+pm2 logs discord-bot
+
+# Stop the bot
+pm2 stop discord-bot
+
+# Restart the bot
+pm2 restart discord-bot
+
+# Make PM2 start on system boot (optional)
+pm2 startup
+pm2 save
+```
+
+#### Handling Crashes and Reconnections
+
+The Discord bot will automatically attempt to reconnect if:
+- Network connection drops
+- Discord API becomes temporarily unavailable
+- The bot is disconnected for any reason
+
+**Monitoring the Bot**:
+```bash
+# Check if the bot is running
+ps aux | grep discord-bot.js
+
+# View the bot's output/logs
+tail -f bot.log  # (if logs are piped to a file)
 ```
 
 ## Testing the Bot
