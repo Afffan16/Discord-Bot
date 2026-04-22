@@ -16,9 +16,20 @@ A Discord bot powered by n8n workflow automation and Google Gemini API that prov
 - `!truth` - Get a truth question
 - `!dare` - Get a dare challenge
 
+---
+
+## 🚀 Quick Navigation
+
+| Scenario | Go To |
+|----------|-------|
+| **Setting up for the first time** | [First Time Setup](#first-time-setup) |
+| **EC2 was stopped/restarted and you need to bring everything back up** | [Restarting After EC2 Stop](#restarting-after-ec2-stop) |
+
+---
+
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your system:
+Before you begin, ensure you have the following:
 
 - Ubuntu/Linux environment (or WSL on Windows)
 - `sudo` access on your machine
@@ -28,7 +39,11 @@ Before you begin, ensure you have the following installed on your system:
 - Google Gemini API Key
 - Discord Bot Token
 
-## Installation & Setup
+---
+
+## First Time Setup
+
+> Follow this section **only once** when setting up the project from scratch on a new EC2 instance.
 
 ### 1. Update Your System
 
@@ -78,7 +93,7 @@ Update the `docker-compose.yml` file with your configuration:
 nano docker-compose.yml
 ```
 
-**Important**: Update your public IP address in the configuration file before proceeding.
+> **Important**: Update your public IP address in the configuration file before proceeding.
 
 ### 6. Start n8n
 
@@ -154,7 +169,7 @@ nano discord-bot.js
 node discord-bot.js
 ```
 
-**Important**: The script will run continuously and listen for Discord commands. Keep this terminal window open. To stop the bot, press `Ctrl + C`.
+> **Important**: The script will run continuously and listen for Discord commands. Keep this terminal window open. To stop the bot, press `Ctrl + C`.
 
 The bot will automatically:
 - Connect to Discord
@@ -210,21 +225,91 @@ pm2 startup
 pm2 save
 ```
 
-#### Handling Crashes and Reconnections
+---
 
-The Discord bot will automatically attempt to reconnect if:
-- Network connection drops
-- Discord API becomes temporarily unavailable
-- The bot is disconnected for any reason
+## 🔄 Restarting After EC2 Stop
 
-**Monitoring the Bot**:
+> Follow this section **every time** your EC2 instance was stopped and restarted. Your public IP will have changed and Docker containers will be stopped — you need to bring everything back up manually.
+
+### Step 1: Get Your New Public IP
+
+After starting your EC2 instance, go to the **AWS Console → EC2 → Instances** and copy your new **Public IPv4 address**.
+
+> ⚠️ **Note**: EC2 public IPs change every time the instance is stopped and started (unless you're using an Elastic IP). You must update this in your config.
+
+### Step 2: Update the Public IP in docker-compose.yml
+
 ```bash
-# Check if the bot is running
-ps aux | grep discord-bot.js
-
-# View the bot's output/logs
-tail -f bot.log  # (if logs are piped to a file)
+cd ~/n8n
+nano docker-compose.yml
 ```
+
+Find the line that contains your old public IP (look for `WEBHOOK_URL` or `N8N_HOST`) and replace it with your new public IP. Save and exit (`Ctrl + X`, then `Y`, then `Enter`).
+
+### Step 3: Restart n8n with Docker Compose
+
+```bash
+# Navigate to your n8n directory
+cd ~/n8n
+
+# Bring up the containers in the background
+docker-compose up -d
+
+# Confirm n8n is running
+docker ps
+
+# Optional: Watch the logs to make sure n8n started correctly
+docker-compose logs -f
+```
+
+> You should see n8n listed in `docker ps` with a status of `Up`. Press `Ctrl + C` to stop watching logs once it's confirmed.
+
+### Step 4: Verify n8n is Accessible
+
+Open your browser and go to:
+
+```
+http://<Your_New_EC2_Public_IP>:5678/
+```
+
+Log in and confirm your workflow is still there and **active** (green toggle).
+
+### Step 5: Restart the Discord Bot
+
+Navigate to your project folder and start the bot again using whichever method you prefer:
+
+**Option A – Direct (simple):**
+```bash
+cd ~/n8n
+node discord-bot.js
+```
+
+**Option B – Screen session (recommended):**
+```bash
+cd ~/n8n
+screen -S discord-bot -d -m node discord-bot.js
+
+# Confirm it's running
+screen -ls
+```
+
+**Option C – PM2 (if you used it before):**
+```bash
+pm2 restart discord-bot
+# or if it's not in the PM2 list:
+pm2 start discord-bot.js --name discord-bot
+```
+
+### Step 6: Test the Bot
+
+In your Discord server, send:
+```
+!help
+```
+
+If the bot responds, everything is up and running. ✅
+
+---
 
 ## Testing the Bot
 
@@ -239,6 +324,8 @@ Test the webhook using n8n's testing interface.
    !truth
    !dare
    ```
+
+---
 
 ## Project Structure
 
@@ -259,6 +346,8 @@ Discord Bot/
 4. The AI-generated response is sent back to Discord
 5. User receives the truth question or dare challenge in Discord
 
+---
+
 ## Configuration
 
 ### Environment Variables
@@ -277,6 +366,8 @@ N8N_WEBHOOK_URL=your_n8n_webhook_url
 - Add Gemini API Key in the n8n workflow
 - Configure webhook endpoint to match your Discord bot setup
 
+---
+
 ## Troubleshooting
 
 ### Common Issues
@@ -289,11 +380,13 @@ N8N_WEBHOOK_URL=your_n8n_webhook_url
 | Permission denied errors | Add user to docker group: `sudo usermod -aG docker $USER` |
 | Bot not responding | Check bot token is correctly set in `discord-bot.js` |
 | Workflow not executing | Verify Gemini API key is added to the n8n workflow |
+| n8n shows old IP / webhook fails after restart | Update the public IP in `docker-compose.yml` and run `docker-compose up -d` again |
+| Containers not running after EC2 restart | Run `docker-compose up -d` from the `~/n8n` directory |
 
 ### Viewing Logs
 
 ```bash
-# View all container logs
+# View all running containers
 docker ps
 
 # View n8n logs in real-time
@@ -310,6 +403,8 @@ If you encounter any errors:
 2. Verify all configuration files are correctly set up
 3. Ensure all required API keys are added
 4. Contact the project maintainer or consult Claude (AI Assistant)
+
+---
 
 ## Environment Details
 
@@ -333,6 +428,8 @@ If you encounter any errors:
 - `axios` - HTTP client
 - `dotenv` - Environment variable management
 
+---
+
 ## Credits
 
 **Original Creator**: Affan  
@@ -353,6 +450,6 @@ Please contact the original creator for licensing information.
 ---
 
 **Last Updated**: 2026  
-**Version**: 1.0
+**Version**: 1.1
 
 For issues, questions, or contributions, please contact the maintainer.
